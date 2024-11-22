@@ -1,0 +1,51 @@
+Author: Kenneth J. Pronovici <pronovic@debian.org>
+Description: Use $PROGRAM rather than $CPROTO in test scripts.
+ In early 2016, cproto started consistently failing to build in the Debian
+ Reproducible Builds environment.  The cause of the failure was a difference in
+ the output in the test cases.  All test cases worked as expected in the first
+ build, but included extra text (the full path to the cproto program as a
+ leading comment) in the second build.
+ .
+ I traced this back to the $CPROTO environment variable.  The test scripts use
+ this variable to identify the path to the cproto program on disk, but $CPROTO
+ is also a special variable in cproto itself, intended to hold program
+ arguments.  (See the manpage for details.)  I'm not sure what in the second
+ build triggered this change in output, but it is clear that $CPROTO is not a
+ safe variable name for this purpose.  This patch changes the test scripts to
+ use $PROGRAM rather than $CPROTO.
+Last-Update: 2020-07-17
+Index: cproto/testing/make_dcl.sh
+===================================================================
+--- cproto.orig/testing/make_dcl.sh
++++ cproto/testing/make_dcl.sh
+@@ -13,7 +13,7 @@ do
+ 	then
+ 		echo "** making $I.dcl"
+ 		grep "CASE[ 	]$i" run_test.txt | \
+-			sed -e 's/^.*=/$CPROTO /' \
++			sed -e 's/^.*=/$PROGRAM /' \
+ 				-e "s/\$/\ -o$I.out\ $I.c/" >"$I.dcl"
+ 		chmod 755 "$I.dcl"
+ 	fi
+Index: cproto/testing/testunix.sh
+===================================================================
+--- cproto.orig/testing/testunix.sh
++++ cproto/testing/testunix.sh
+@@ -4,7 +4,7 @@
+ # Test one or more given cases by number, creating the VMS test script
+ # as a side-effect.
+ #
+-CPROTO=../cproto
++PROGRAM=../cproto
+ errors=
+ 
+ [ -z "$TEST_REF" ] && TEST_REF=.
+@@ -45,7 +45,7 @@ do
+ 
+ 	. "./$I.dcl" 2>"$ERR_FILE"
+ 
+-	# When we select either the -a or -t options, CPROTO will edit
++	# When we select either the -a or -t options, PROGRAM will edit
+ 	# the input file.  It also writes to the standard output the
+ 	# prototypes that it is extracting.  Since there's only one
+ 	# reference for each test, I simply concatenate the edited file

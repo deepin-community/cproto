@@ -1,15 +1,20 @@
-Source: template-repository
-Section: unknown
+Source: cproto
+Section: devel
 Priority: optional
-Maintainer: Tsic404 <liuheng@deepin.org>
-Build-Depends: debhelper (>= 11)
-Standards-Version: 4.1.3
-Homepage: https://github.com/deepin-community/template-repository
-#Vcs-Browser: https://salsa.debian.org/debian/deepin-community-template-repository
-#Vcs-Git: https://salsa.debian.org/debian/deepin-community-template-repository.git
+Maintainer: Kenneth J. Pronovici <pronovic@debian.org>
+Homepage: https://invisible-island.net/cproto/cproto.html
+Build-Depends: debhelper-compat (= 13), bison, flex
+Rules-Requires-Root: no
+Standards-Version: 4.6.2.0
+Vcs-Browser: https://salsa.debian.org/debian/cproto
+Vcs-Git: https://salsa.debian.org/debian/cproto.git
 
-Package: template-repository
+Package: cproto
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: <insert up to 60 chars description>
- <insert long description, indented with spaces>
+Depends: ${shlibs:Depends}, ${misc:Depends}, gcc
+Description: utilities to generate C function prototypes from C source code
+ Cproto is a program that generates function prototypes and variable
+ declarations from C source code.  It can also convert function
+ definitions between the old style and the ANSI C style.  This
+ conversion overwrites the original files, so make a backup copy of
+ your files in case something goes wrong.

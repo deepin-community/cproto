@@ -1,0 +1,4 @@
+# Execute the upstream unit tests using a modified test runner
+Tests: unittest
+Depends: @, diffutils, gcc
+

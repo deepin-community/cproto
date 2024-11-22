@@ -1,4 +1,21 @@
 #!/usr/bin/make -f
 
+# Set to enable verbose output from debhelper
+#export DH_VERBOSE=1
+
+# Enable all hardening-related compiler options
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
 %:
-	dh $@
+	dh $@ --without autoreconf
+
+override_dh_installdocs:
+	dh_installdocs README
+
+override_dh_auto_configure:
+	dh_auto_configure -- --enable-llib
+
+override_dh_auto_test:
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	sh debian/smoketest
+endif
