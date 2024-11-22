@@ -1,0 +1,101 @@
+#!/bin/sh
+
+# Make sure $AUTOPKGTEST_TMP is available
+if [ "${AUTOPKGTEST_TMP}"F = "F" ]; then
+   echo "Error: expected environment variable AUTOPKGTEST_TMP is not set."
+   exit 1
+fi
+
+# Make sure $AUTOPKGTEST_ARTIFACTS is available
+if [ "${AUTOPKGTEST_ARTIFACTS}"F = "F" ]; then
+   echo "Error: expected environment variable AUTOPKGTEST_ARTIFACTS is not set."
+   exit 1
+fi
+
+# Determine the test execution mode 
+if [ "${1}"F = "F" ]; then
+   MODE="autopkgtest"
+elif [ "${1}" = "-r" ]; then
+   MODE="debian/rules"
+else 
+   echo "usage: $0 [-r]\n-r Run in debian/rules mode instead of autopkgtest mode"
+   exit 2
+fi
+
+# Determine locations of required tools
+SOURCE_TREE="${PWD}"
+if [ "${MODE}" = "debian/rules" ]; then
+   # In debian/rules mode, the executables are assumed to be in the source tree
+   PROGRAM="${SOURCE_TREE}/cproto"
+else
+   # In autopkgtest mode, the executables are assumed to be installed
+   PROGRAM="/usr/bin/cproto"
+fi
+
+# Print a test summary
+echo ""
+echo "========================================================================="
+echo "Running ${0} in mode: ${MODE}"
+echo "========================================================================="
+echo "SOURCE_TREE...........: ${SOURCE_TREE}"
+echo "AUTOPKGTEST_TMP.......: ${AUTOPKGTEST_TMP}"
+echo "AUTOPKGTEST_ARTIFACTS.: ${AUTOPKGTEST_ARTIFACTS}"
+echo "PROGRAM...............: ${PROGRAM}"
+echo "========================================================================="
+echo ""
+
+# Always start from within $AUTOPKGTEST_TMP
+cd ${AUTOPKGTEST_TMP}
+
+# Copy the upstream test directory and then work inside it
+echo "Creating the test directory..."
+cp -r ${SOURCE_TREE}/testing .
+cd testing
+
+# Execute most of the upstream tests.
+# This is roughly equivalent to the upstream tests, but is in a form that is
+# easier for me to debug.  Just to simplify things, I target only the tests that 
+# do not modify the code.  That's why I filter out lines containing -a or -t.
+echo "Running unit tests..."
+for CASE in `grep 'CASE.*unix' run_test.txt | egrep -v -- "-a|-t" | sed 's/^CASE *//g' | sed 's/ =.*$//g'`; do
+   echo "Test case ${CASE}..."
+
+   ./make_dcl.sh "case${CASE}"
+   if [ $? != 0 ]; then
+      echo "Error: failed to create script for case ${CASE}"
+      exit 1
+   elif [ ! -f "case${CASE}.dcl" ]; then
+      echo "Error: could not find case${CASE}.dcl"
+      exit 1
+   fi
+
+   cp syntax.c "case${CASE}.c"
+   if [ ! -f "case${CASE}.c" ]; then
+      echo "Error: failed to create case${CASE}.c"
+      exit 1
+   fi
+
+   PROGRAM=${PROGRAM} . "./case${CASE}.dcl"  2>/dev/null
+   if [ $? != 0 ]; then
+      echo "Error: cproto failed for test case ${CASE}"
+      exit 1
+   elif [ ! -f "case${CASE}.out" ]; then
+      echo "Error: could not found case${CASE}.out"
+      exit 1
+   fi
+
+   if [ ! -f "case${CASE}.ref" ]; then
+      echo "Error: could not find case${CASE}.ref"
+      exit 1
+   fi
+
+   /usr/bin/diff -Naurb "case${CASE}.ref" "case${CASE}.out"
+   if [ $? != 0 ]; then
+      echo "Error: Expected and actual results differ for case ${CASE}"
+      exit 1
+   fi
+done
+
+# Close the test
+echo ""
+
